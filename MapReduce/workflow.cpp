@@ -45,6 +45,12 @@ Workflow::Workflow(std::string input_dir_arg,
 // Destructor
 Workflow::~Workflow()
 {
+	// Delete intermediate files
+	BOOST_LOG_TRIVIAL(info) << "Removing intermediate files...";
+	for (boost::filesystem::directory_iterator end_dir_it, it(this->intermediate_dir_); it != end_dir_it; ++it) {
+		boost::filesystem::remove_all(it->path());
+	}
+
 	// Delete heap variables, free DLLs
 	delete map_;
 	delete sorter_;
@@ -288,8 +294,8 @@ void Workflow::run()
 	}
 
 	// TODO: make number of mappers and reducers configurable via the command line
-	int num_mappers = std::min<int>(static_cast<int>(input_files.size()), 2); // Not possible to have more mappers than input files
-	int num_reducers = 1;
+	int num_mappers = std::min<int>(static_cast<int>(input_files.size()), 3); // Not possible to have more mappers than input files
+	int num_reducers = std::min<int>(static_cast<int>(input_files.size()), 3); // Not possible to have more reduces than input files
 	std::vector<std::vector<boost::filesystem::path>> map_partitions = partitionFiles(input_files, num_mappers);
 
 
@@ -381,11 +387,6 @@ void Workflow::run()
 	boost::filesystem::ofstream success_file{ success_path };
 	success_file.close();
 
-	// Clean up
-	BOOST_LOG_TRIVIAL(info) << "Removing intermediate files...";
-	for (boost::filesystem::directory_iterator end_dir_it, it(this->intermediate_dir_); it != end_dir_it; ++it) {
-		boost::filesystem::remove_all(it->path());
-	}
 	// Log success of workflow run
 	BOOST_LOG_TRIVIAL(info) << "Map reduce process complete.";
 }
