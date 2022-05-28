@@ -42,10 +42,13 @@ public:
 	// Gets the path of the output directory
 	boost::filesystem::path getOutputDirectory();
 
+	void setOutputFileName(std::string name);
+
 private:
 	boost::filesystem::path output_directory_;
 	boost::filesystem::path output_path_;
 	boost::filesystem::ofstream* output_stream_;
+	std::string output_file_name_ = "reduce.txt";
 
 protected:
 	// Exports word, value pair to disk
@@ -60,7 +63,7 @@ inline IReduce<KEYT, VALUET>::IReduce(const boost::filesystem::path& directory)
 {
 	output_directory_ = directory;
 	output_path_ = boost::filesystem::path{
-		output_directory_.string() + "\\reduce.txt"
+		output_directory_.string() + "\\" + output_file_name_
 	};
 	output_stream_ = new boost::filesystem::ofstream{ output_path_ };
 }
@@ -90,6 +93,22 @@ inline boost::filesystem::path IReduce<KEYT, VALUET>::getOutputDirectory()
 	return output_directory_;
 }
 
+template<typename KEYT, typename VALUET>
+inline void IReduce<KEYT, VALUET>::setOutputFileName(std::string name)
+{
+	// Update the output path
+	output_file_name_ = name;
+	output_path_ = boost::filesystem::path{
+		output_directory_.string() + "\\" + output_file_name_
+	};
+
+	// Close old output stream if it is open
+	if (output_stream_->is_open()) {
+		output_stream_->close();
+	}
+	output_stream_ = new boost::filesystem::ofstream{ output_path_ };
+}
+
 // Export to disk writes (key, sum values) to output_file_
 template<typename KEYT, typename VALUET>
 inline int IReduce<KEYT, VALUET>::exportToDisk(const KEYT& key, VALUET value)
@@ -99,9 +118,7 @@ inline int IReduce<KEYT, VALUET>::exportToDisk(const KEYT& key, VALUET value)
 		output_stream_->open(output_path_, std::ios_base::app);
 	}
 
-	/*	If output_stream_ does not fail to open, then output(key, reduced value)
-		to output_stream_
-	*/
+	// If output_stream_ does not fail to open, then output (key, reduced value) to output stream
 	if (!output_stream_->fail()) {
 		// Write result to disk 
 		*(output_stream_) << "(";
