@@ -444,6 +444,7 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 
 			int success = 0;
 			int line_count = 0;
+			BOOST_LOG_TRIVIAL(info) << "Info in Workflow run(): Running map process for " << current_file.filename().string();
 			// Process all lines of the file via map
 			while (std::getline(input_stream, line))
 			{
