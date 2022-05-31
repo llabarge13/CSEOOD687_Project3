@@ -9,6 +9,9 @@
 // May 12, 2022 - Project 2
 //	Updated for project 2 to load map and reduce functions
 //	from DLLs
+// 
+// June 2, 2022 - Project 3
+//	Updated to run map and reduce processes via threads
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -26,9 +29,14 @@ Workflow::Workflow(std::string input_dir_arg,
 	std::string inter_dir_arg,
 	std::string output_dir_arg,
 	std::string map_dll_path,
-	std::string reduce_dll_path)
+	std::string reduce_dll_path,
+	int num_mappers,
+	int num_reducers)
 {
 	BOOST_LOG_TRIVIAL(debug) << "Debug in Workflow constructor: Entering constructor.";
+
+	this->num_mappers = num_mappers;
+	this->num_reducers = num_reducers;
 
 	// Get DLL handle for map library
 	aquireMapDLL(map_dll_path);
@@ -50,11 +58,6 @@ Workflow::~Workflow()
 	for (boost::filesystem::directory_iterator end_dir_it, it(this->intermediate_dir_); it != end_dir_it; ++it) {
 		boost::filesystem::remove_all(it->path());
 	}
-
-	// Delete heap variables, free DLLs
-	delete map_;
-	delete sorter_;
-	delete reduce_;
 
 	FreeLibrary(hDLL_map_);
 	FreeLibrary(hDLL_reduce_);
@@ -294,15 +297,15 @@ void Workflow::run()
 	}
 
 	// TODO: make number of mappers and reducers configurable via the command line
-	int num_mappers = std::min<int>(static_cast<int>(input_files.size()), 3); // Not possible to have more mappers than input files
-	int num_reducers = std::min<int>(static_cast<int>(input_files.size()), 3); // Not possible to have more reduces than input files
-	std::vector<std::vector<boost::filesystem::path>> map_partitions = partitionFiles(input_files, num_mappers);
+	int mapper_count = std::min<int>(static_cast<int>(input_files.size()), this->num_mappers); // Not possible to have more mappers than input files
+	int reducer_count = std::min<int>(static_cast<int>(input_files.size()), this->num_reducers); // Not possible to have more reduces than input files
+	std::vector<std::vector<boost::filesystem::path>> map_partitions = partitionFiles(input_files, mapper_count);
 
 
 	// Create the mapper threads
 	std::vector<std::thread> map_threads;
 	for (int m = 0; m < map_partitions.size(); m++) {
-		map_threads.push_back(std::thread(&Workflow::runMapProcess, this, map_partitions[m], num_reducers));
+		map_threads.push_back(std::thread(&Workflow::runMapProcess, this, map_partitions[m], reducer_count));
 	}
 
 	// Wait for all the map threads to finish
@@ -310,10 +313,7 @@ void Workflow::run()
 		t->join();
 	}
 
-
-	// TODO: Check all the map threads successfully completed
-
-	/*// Group together all the partition files from the mappers to pass to the reducer threads
+	// Group together all the partition files from the mappers to pass to the reducer threads
 	std::vector<std::vector<boost::filesystem::path>> reduce_partitions(num_reducers);
 	for (int p = 0; p < reduce_partitions.size(); p++) {
 		for (boost::filesystem::directory_iterator itr(this->intermediate_dir_); itr != end_itr; ++itr)
@@ -335,8 +335,6 @@ void Workflow::run()
 	for (auto t = reduce_threads.begin(); t != reduce_threads.end(); t++) {
 		t->join();
 	}
-
-	// TODO: Check all the reduce threads finished
 	
 	// Gather all the intermediate reduce files
 	std::vector<boost::filesystem::path> reducer_output;
@@ -348,37 +346,8 @@ void Workflow::run()
 		}
 	}
 	
-
 	// Run final reduce operation on intermediate reduce output files
 	runReduceProcess(reducer_output, this->out_dir_, 0);
-	*/
-
-	/////////// SORT ///////////////////
-	// Initialize a sorting object
-	this->sorter_ = new Sorting();
-	for (boost::filesystem::directory_iterator itr(this->intermediate_dir_); itr != end_itr; ++itr)
-	{
-		BOOST_LOG_TRIVIAL(info) << "Running sort on " << itr->path().filename().string();
-		success = this->sorter_->sort(itr->path());
-
-		if (success != 0) {
-			BOOST_LOG_TRIVIAL(fatal) << "Failed to process " << itr->path().filename().string() << " with sort.";
-			exit(1);
-		}
-	}
-
-	/////////// REDUCE ////////////////
-	BOOST_LOG_TRIVIAL(info) << "Running reduce operation...";
-	const boost::container::map<std::string, std::vector<int>>& aggregateData = sorter_->getAggregateData();
-	reduce_ = create_reduce_(this->out_dir_);
-	for (auto const& pair : aggregateData) {
-		success = this->reduce_->reduce(pair.first, pair.second);
-
-		if (success != 0) {
-			BOOST_LOG_TRIVIAL(fatal) << "Failed to export to " << reduce_->getOutputPath().string() << " with reduce.";
-			exit(1);
-		}
-	}
 
 
 	// Write the success file
@@ -439,7 +408,7 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 			if (input_stream.fail() == 1)
 			{
 				BOOST_LOG_TRIVIAL(fatal) << "Fatal in Workflow run(): ifstream could not be opened for " << current_file.filename().string();
-				exit(-1);
+				exit(1);
 			}
 
 			int success = 0;
@@ -456,7 +425,7 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 				if (success != 0)
 				{
 					BOOST_LOG_TRIVIAL(error) << "Error in Workflow run(): Map did not successfully process entire file at line " << line_count << " of " << current_file.filename().string();
-					exit(-1);
+					exit(1);
 				}
 			}
 

@@ -4,6 +4,7 @@
 // April 28, 2022 - Project 1
 // 
 //  Workflow class definition
+// 
 // May 12, 2022 - Updated for project 2
 //  Updated for reduce and map DLLs
 #pragma once
@@ -22,7 +23,9 @@ public:
 		std::string inter_dir_arg,
 		std::string output_dir_arg,
 		std::string map_dll_path,
-		std::string reduce_dll_path);											// constructor
+		std::string reduce_dll_path,
+		int num_mappers,
+		int num_reducers);														// constructor
 	~Workflow();																// destructor
 	boost::filesystem::path getTargetDir();										// directory containing files to be fed to Map
 	boost::filesystem::path getIntermediateDir();								// directory containing intermediate files from Map
@@ -40,10 +43,6 @@ private:
 	boost::filesystem::path reduce_lib_path_;
 
 
-	IMap<std::string, std::string>* map_;										// Map is aggregated by Workflow
-	Sorting* sorter_;															// Sorting is aggregated by Workflow
-	IReduce<std::string, int>* reduce_;											// Reduce is aggregated by Workflow
-
 	// Interfaces to map and reduce librarys 
 	buildMapper create_map_;
 	buildReducer create_reduce_;
@@ -51,6 +50,10 @@ private:
 	// Handles to map and reduce DLLs
 	HINSTANCE hDLL_map_;
 	HINSTANCE hDLL_reduce_;
+
+	// Configurable number of map and reduce threads
+	int num_mappers;
+	int num_reducers;
 
 	// Validators and setters
 	void setInputDirectory(std::string input_dir_arg);

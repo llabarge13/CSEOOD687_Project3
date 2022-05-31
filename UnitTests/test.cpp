@@ -255,7 +255,7 @@ TEST(WorkflowTest, testConstructor)
     std::string reduce_dll = ".\\dlls\\ReduceLibrary.dll";
 
 
-    Workflow workflow = Workflow(tar_dir, inter_dir, out_dir, map_dll, reduce_dll);
+    Workflow workflow = Workflow(tar_dir, inter_dir, out_dir, map_dll, reduce_dll, 1, 1);
 
     std::string correct_tar_dir = ".\\shakespeare";
     boost::filesystem::path tar_path = workflow.getTargetDir();
@@ -284,7 +284,7 @@ TEST(WorkflowTest, testRun)
     std::string map_dll = ".\\dlls\\MapLibrary.dll";
     std::string reduce_dll = ".\\dlls\\ReduceLibrary.dll";
 
-    Workflow workflow = Workflow(tar_dir, inter_dir, out_dir, map_dll, reduce_dll);
+    Workflow workflow = Workflow(tar_dir, inter_dir, out_dir, map_dll, reduce_dll, 1, 1);
 
     workflow.run();
     boost::filesystem::path success_file = boost::filesystem::path{ out_dir + "\\SUCCESS" };

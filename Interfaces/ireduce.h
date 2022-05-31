@@ -7,6 +7,9 @@
 // for the reduce library.
 // 
 // Abstract class.
+//
+// June 2, 2022 - Project 3
+//	Added class method to change output file name
 #include <array>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -65,7 +68,12 @@ inline IReduce<KEYT, VALUET>::IReduce(const boost::filesystem::path& directory)
 	output_path_ = boost::filesystem::path{
 		output_directory_.string() + "\\" + output_file_name_
 	};
-	output_stream_ = new boost::filesystem::ofstream{ output_path_ };
+	output_stream_ = new boost::filesystem::ofstream{ };
+
+	// Delete old result file if it exists
+	if (boost::filesystem::exists(output_path_)) {
+		boost::filesystem::remove(output_path_);
+	}
 }
 
 // Destructor
@@ -106,7 +114,13 @@ inline void IReduce<KEYT, VALUET>::setOutputFileName(std::string name)
 	if (output_stream_->is_open()) {
 		output_stream_->close();
 	}
-	output_stream_ = new boost::filesystem::ofstream{ output_path_ };
+	output_stream_ = new boost::filesystem::ofstream{ };
+
+
+	// Delete old result file if it exists
+	if (boost::filesystem::exists(output_path_)) {
+		boost::filesystem::remove(output_path_);
+	}
 }
 
 // Export to disk writes (key, sum values) to output_file_
