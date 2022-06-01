@@ -53,13 +53,13 @@ Workflow::Workflow(std::string input_dir_arg,
 // Destructor
 Workflow::~Workflow()
 {
-/*TH
+
 	// Delete intermediate files
 	BOOST_LOG_TRIVIAL(info) << "Removing intermediate files...";
 	for (boost::filesystem::directory_iterator end_dir_it, it(this->intermediate_dir_); it != end_dir_it; ++it) {
 		boost::filesystem::remove_all(it->path());
 	}
-*/
+
 	FreeLibrary(hDLL_map_);
 	FreeLibrary(hDLL_reduce_);
 }
@@ -346,7 +346,7 @@ void Workflow::run()
 			reducer_output.push_back(itr->path());
 		}
 	}
-/*TH
+
 	// Run final reduce operation on intermediate reduce output files
 	runReduceProcess(reducer_output, this->out_dir_, 0);
 
@@ -359,7 +359,7 @@ void Workflow::run()
 
 	// Log success of workflow run
 	BOOST_LOG_TRIVIAL(info) << "Map reduce process complete.";
-*/
+
 }
 
 // Partitions/groups a list of files/paths into the given number of partitions
@@ -459,14 +459,16 @@ void Workflow::runReduceProcess(const std::vector<boost::filesystem::path>& file
 
 	// Run sort on all the files that belong to the partition
 	int sort_success = 0;
+	Sorting* sorter = new Sorting();
+
 	for (int file = 0; file < files.size(); file++)
 	{
-		sort_success = reducer->sort(files[file]);
+		sort_success = sorter->sort(files[file]);
 	}
 
 	// Run reduce on the output from sort
 	int reducer_success = 0;
-	for (auto const& pair : reducer->getAggregateData())
+	for (auto const& pair : sorter->getAggregateData())
 	{
 		reducer_success = reducer->reduce(pair.first, pair.second);
 
@@ -478,6 +480,4 @@ void Workflow::runReduceProcess(const std::vector<boost::filesystem::path>& file
 	// Delete reducer
 	delete reducer;
 
-	// Because we are running multiple reducers, we will get multiple reduce files at the end when the threads return.
-	// We will have to run one final reduce process over all those intermediate files e.g. reduce0.txt, reduce1.txt if we had 2 partitions
 }
