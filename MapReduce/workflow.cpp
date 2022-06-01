@@ -53,12 +53,13 @@ Workflow::Workflow(std::string input_dir_arg,
 // Destructor
 Workflow::~Workflow()
 {
+/*TH
 	// Delete intermediate files
 	BOOST_LOG_TRIVIAL(info) << "Removing intermediate files...";
 	for (boost::filesystem::directory_iterator end_dir_it, it(this->intermediate_dir_); it != end_dir_it; ++it) {
 		boost::filesystem::remove_all(it->path());
 	}
-
+*/
 	FreeLibrary(hDLL_map_);
 	FreeLibrary(hDLL_reduce_);
 }
@@ -301,7 +302,7 @@ void Workflow::run()
 	int reducer_count = std::min<int>(static_cast<int>(input_files.size()), this->num_reducers); // Not possible to have more reduces than input files
 	std::vector<std::vector<boost::filesystem::path>> map_partitions = partitionFiles(input_files, mapper_count);
 
-
+	////////////// MAP //////////////
 	// Create the mapper threads
 	std::vector<std::thread> map_threads;
 	for (int m = 0; m < map_partitions.size(); m++) {
@@ -324,7 +325,7 @@ void Workflow::run()
 			}
 		}
 	}
-
+	///////////// REDUCE ///////////////
 	// Create the reduce threads
 	std::vector<std::thread> reduce_threads;
 	for (int r = 0; r < reduce_partitions.size(); r++) {
@@ -345,7 +346,7 @@ void Workflow::run()
 			reducer_output.push_back(itr->path());
 		}
 	}
-	
+/*TH
 	// Run final reduce operation on intermediate reduce output files
 	runReduceProcess(reducer_output, this->out_dir_, 0);
 
@@ -358,6 +359,7 @@ void Workflow::run()
 
 	// Log success of workflow run
 	BOOST_LOG_TRIVIAL(info) << "Map reduce process complete.";
+*/
 }
 
 // Partitions/groups a list of files/paths into the given number of partitions
@@ -441,18 +443,41 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 	delete mapper;
 }
 
+// Workflow::runReduceProcess takes as input all the files that belong to a particular partition
+// along with the partition id (e.g 0) and the directory to output the reduce file to.
+// Because we are running multiple reducers, we will get multiple reduce files at the end when the threads return.
+// We will have to run one final reduce process over all those intermediate files e.g. reduce0.txt, reduce1.txt if we had 2 partitions
+// The intermeidate reduce files should go in the intermediate dir, not the final output directory, which is why there is an output directory parameter.
 void Workflow::runReduceProcess(const std::vector<boost::filesystem::path>& files, const boost::filesystem::path& output_directory, int partition)
 {
-	// Takes as input all the files that belong to a particular partition along with the partition id e.g 0 and the directory to output the reduce file to.
-	
-	// Because we are running multiple reducers, we will get multiple reduce files at the end when the threads return.
-	// We will have to run one final reduce process over all those intermediate files e.g. reduce0.txt, reduce1.txt if we had 2 partitions
+	// Create reducer
 	// The intermeidate reduce files should go in the intermediate dir, not the final output directory, which is why there is an output directory parameter.
+	IReduce<std::string, int>* reducer = create_reduce_(output_directory);
+	// Set the output file name to reduce + partition e.g. reduce0.txt
+	std::string output_filename = "reduce" + std::to_string(partition) + ".txt";
+	reducer->setOutputFileName(output_filename);
 
 	// Run sort on all the files that belong to the partition
-	// Create reducer
-	// Set the output file name to reduce + partition e.g. reduce0.txt
+	int sort_success = 0;
+	for (int file = 0; file < files.size(); file++)
+	{
+		sort_success = reducer->sort(files[file]);
+	}
 
 	// Run reduce on the output from sort
+	int reducer_success = 0;
+	for (auto const& pair : reducer->getAggregateData())
+	{
+		reducer_success = reducer->reduce(pair.first, pair.second);
+
+		if (reducer_success != 0) {
+			BOOST_LOG_TRIVIAL(fatal) << "Failed to export to " << reducer->getOutputPath().string() << " with reduce.";
+			exit(1);
+		}
+	}
 	// Delete reducer
+	delete reducer;
+
+	// Because we are running multiple reducers, we will get multiple reduce files at the end when the threads return.
+	// We will have to run one final reduce process over all those intermediate files e.g. reduce0.txt, reduce1.txt if we had 2 partitions
 }

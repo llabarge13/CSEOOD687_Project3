@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="sorting.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="executive.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -26,9 +23,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sorting.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mapreduce.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

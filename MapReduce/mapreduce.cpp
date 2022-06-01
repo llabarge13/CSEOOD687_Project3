@@ -31,6 +31,16 @@ int main(int argc, char* argv[])
 {
     init();
 
+/*
+    std::string input_dir = argv[1];
+    std::string inter_dir = argv[2];
+    std::string output_dir = argv[3];
+    std::string map_dll = argv[4];
+    std::string reduce_dll = argv[5];
+    int map_count = std::stoi(argv[6]);
+    int reduce_count = std::stoi(argv[7]);
+*/
+
     std::string input_dir;
     std::string inter_dir;
     std::string output_dir;
@@ -118,7 +128,6 @@ int main(int argc, char* argv[])
     if (vm.count("reducers")) {
         reduce_count = vm["reducers"].as<int>();
     }
-
 
     // Instantiate an executor
     Executive* executive = new Executive(input_dir, inter_dir, output_dir, map_dll, reduce_dll, map_count, reduce_count);

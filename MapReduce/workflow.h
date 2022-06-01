@@ -10,7 +10,6 @@
 #pragma once
 #include "boost\filesystem.hpp"
 #include "imap.h"
-#include "sorting.h"
 #include "ireduce.h"
 
 typedef IMap<std::string, std::string>* (*buildMapper)(const boost::filesystem::path&);

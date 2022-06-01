@@ -13,6 +13,8 @@
 #include <array>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/container/map.hpp>
+
 #pragma once
 
 
@@ -38,6 +40,13 @@ public:
 	//
 	// Abstract class method, must be defined.
 	virtual int reduce(const KEYT& key, const std::vector<VALUET>& values) = 0;
+
+	// Abstract class method for sort
+	virtual int sort(const boost::filesystem::path& file) = 0;
+
+	// Abstract class method for getAggregateData()
+	virtual  const boost::container::map<std::string,
+		std::vector<int>>& getAggregateData() = 0;
 
 	// Gets the path of the output file
 	boost::filesystem::path getOutputPath();
