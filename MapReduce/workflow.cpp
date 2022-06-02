@@ -462,10 +462,17 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 
 		for (int file = 0; file < files.size(); file++)
 		{
+			BOOST_LOG_TRIVIAL(info) << "Running sort on " << files[file].filename().string();
 			sort_success = sorter->sort(files[file]);
+
+			if (sort_success != 0) {
+				BOOST_LOG_TRIVIAL(fatal) << "Failed to process " << files[file].filename().string() << " with sort.";
+				exit(1);
+			}
 		}
 
 		// Run reduce on the output from sort
+		BOOST_LOG_TRIVIAL(info) << "Running reduce operation...";
 		int reducer_success = 0;
 		for (auto const& pair : sorter->getAggregateData())
 		{
@@ -480,4 +487,3 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 		delete sorter;
 		delete reducer;
 	}
-
