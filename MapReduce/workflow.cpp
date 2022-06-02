@@ -21,6 +21,7 @@
 #include <boost\filesystem.hpp>
 #include <boost\filesystem\fstream.hpp>
 #include <boost\log\trivial.hpp>
+#include "sorting.h"
 #include "workflow.h"
 #include "windows.h"
 
@@ -441,18 +442,42 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 	delete mapper;
 }
 
-void Workflow::runReduceProcess(const std::vector<boost::filesystem::path>& files, const boost::filesystem::path& output_directory, int partition)
-{
-	// Takes as input all the files that belong to a particular partition along with the partition id e.g 0 and the directory to output the reduce file to.
-	
+	// Workflow::runReduceProcess takes as input all the files that belong to a particular partition
+	// along with the partition id (e.g 0) and the directory to output the reduce file to.
 	// Because we are running multiple reducers, we will get multiple reduce files at the end when the threads return.
 	// We will have to run one final reduce process over all those intermediate files e.g. reduce0.txt, reduce1.txt if we had 2 partitions
 	// The intermeidate reduce files should go in the intermediate dir, not the final output directory, which is why there is an output directory parameter.
+	void Workflow::runReduceProcess(const std::vector<boost::filesystem::path>&files, const boost::filesystem::path & output_directory, int partition)
+	{
+		// Create reducer
+		// The intermeidate reduce files should go in the intermediate dir, not the final output directory, which is why there is an output directory parameter.
+		IReduce<std::string, int>* reducer = create_reduce_(output_directory);
+		// Set the output file name to reduce + partition e.g. reduce0.txt
+		std::string output_filename = "reduce" + std::to_string(partition) + ".txt";
+		reducer->setOutputFileName(output_filename);
 
-	// Run sort on all the files that belong to the partition
-	// Create reducer
-	// Set the output file name to reduce + partition e.g. reduce0.txt
+		// Run sort on all the files that belong to the partition
+		int sort_success = 0;
+		Sorting* sorter = new Sorting();
 
-	// Run reduce on the output from sort
-	// Delete reducer
-}
+		for (int file = 0; file < files.size(); file++)
+		{
+			sort_success = sorter->sort(files[file]);
+		}
+
+		// Run reduce on the output from sort
+		int reducer_success = 0;
+		for (auto const& pair : sorter->getAggregateData())
+		{
+			reducer_success = reducer->reduce(pair.first, pair.second);
+
+			if (reducer_success != 0) {
+				BOOST_LOG_TRIVIAL(fatal) << "Failed to export to " << reducer->getOutputPath().string() << " with reduce.";
+				exit(1);
+			}
+		}
+		// Delete reducer
+		delete sorter;
+		delete reducer;
+	}
+
