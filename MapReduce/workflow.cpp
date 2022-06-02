@@ -477,7 +477,6 @@ void Workflow::runMapProcess(const std::vector<boost::filesystem::path>& files, 
 		for (auto const& pair : sorter->getAggregateData())
 		{
 			reducer_success = reducer->reduce(pair.first, pair.second);
-
 			if (reducer_success != 0) {
 				BOOST_LOG_TRIVIAL(fatal) << "Failed to export to " << reducer->getOutputPath().string() << " with reduce.";
 				exit(1);
