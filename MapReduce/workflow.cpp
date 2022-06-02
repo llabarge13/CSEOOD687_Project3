@@ -36,8 +36,8 @@ Workflow::Workflow(std::string input_dir_arg,
 {
 	BOOST_LOG_TRIVIAL(debug) << "Debug in Workflow constructor: Entering constructor.";
 
-	this->num_mappers = num_mappers;
-	this->num_reducers = num_reducers;
+	this->num_mappers_ = num_mappers;
+	this->num_reducers_ = num_reducers;
 
 	// Get DLL handle for map library
 	aquireMapDLL(map_dll_path);
@@ -298,8 +298,8 @@ void Workflow::run()
 	}
 
 	// TODO: make number of mappers and reducers configurable via the command line
-	int mapper_count = std::min<int>(static_cast<int>(input_files.size()), this->num_mappers); // Not possible to have more mappers than input files
-	int reducer_count = std::min<int>(static_cast<int>(input_files.size()), this->num_reducers); // Not possible to have more reduces than input files
+	int mapper_count = std::min<int>(static_cast<int>(input_files.size()), this->num_mappers_); // Not possible to have more mappers than input files
+	int reducer_count = std::min<int>(static_cast<int>(input_files.size()), this->num_reducers_); // Not possible to have more reduces than input files
 	std::vector<std::vector<boost::filesystem::path>> map_partitions = partitionFiles(input_files, mapper_count);
 
 
@@ -315,7 +315,7 @@ void Workflow::run()
 	}
 
 	// Group together all the partition files from the mappers to pass to the reducer threads
-	std::vector<std::vector<boost::filesystem::path>> reduce_partitions(num_reducers);
+	std::vector<std::vector<boost::filesystem::path>> reduce_partitions(this->num_reducers_);
 	for (int p = 0; p < reduce_partitions.size(); p++) {
 		for (boost::filesystem::directory_iterator itr(this->intermediate_dir_); itr != end_itr; ++itr)
 		{

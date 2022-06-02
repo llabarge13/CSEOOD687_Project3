@@ -13,7 +13,7 @@
 
 
 /*	Constructor takes input directory, dir for intermediate files, output directory,
-	path to Map DLL and path to Reduce DLL as args
+	path to Map DLL and path to Reduce DLL, and number of mappers and reducers as args
 */
 Executive::Executive(std::string input_dir_arg, 
 	std::string inter_dir_arg, 

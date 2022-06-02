@@ -52,8 +52,8 @@ private:
 	HINSTANCE hDLL_reduce_;
 
 	// Configurable number of map and reduce threads
-	int num_mappers;
-	int num_reducers;
+	int num_mappers_;
+	int num_reducers_;
 
 	// Validators and setters
 	void setInputDirectory(std::string input_dir_arg);

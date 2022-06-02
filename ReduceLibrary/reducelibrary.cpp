@@ -1,5 +1,5 @@
 // reduce.cpp
-// Lyndsay LaBarge
+// Lyndsay LaBarge, Todd Hricik
 // CSE687 Object Oriented Design
 // Project 1
 // April 28, 2022
